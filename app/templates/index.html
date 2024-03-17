@@ -1,0 +1,71 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload PCAP File</title>
+</head>
+<body>
+    <h1>Upload PCAP File</h1>
+    <form id="uploadForm" action="/process_pcap" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" id="fileInput">
+        <select name="output" id="outputSelection">
+            <option value="1">Nmap #1</option>
+            <option value="2">Nmap #2</option>
+            <option value="3">Reverse tcp shell</option>
+            <option value="4">RTS Movement</option>
+        </select>
+        <button type="submit" id="uploadButton">Upload</button>
+    </form>
+
+    <div id="output"></div>
+    
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent default form submission
+            let form = event.target;
+            let formData = new FormData(form);
+
+            fetch(form.action, {
+                method: form.method,
+                body: formData
+            })
+            .then(response => response.json()) // Parse response as JSON
+            .then(data => {
+                let outputDiv = document.getElementById('output');
+                outputDiv.innerHTML = ''; // Clear previous content
+                if (data.top_predictions) {
+                    let ul = document.createElement('ul');
+                    data.top_predictions.forEach(prediction => {
+                        let li = document.createElement('li');
+                        li.innerHTML = `
+                            <strong>Index:</strong> ${prediction.Index}<br>
+                            <strong>Prediction:</strong> ${prediction.Prediction}<br>
+                            <strong>Details:</strong><br>
+                            <ul>
+                                ${Object.entries(prediction.Details).map(([key, value]) => `<li><strong>${key}:</strong> ${value}</li>`).join('')}
+                            </ul>
+                        `;
+                        ul.appendChild(li);
+                    });
+                    outputDiv.appendChild(ul);
+                } else {
+                    let ul = document.createElement('ul');
+                    data.unique_ip_ports.forEach(item => {
+                        let li = document.createElement('li');
+                        li.innerHTML = `<strong>IP:</strong> ${item.ip} | <strong>Ports Scanned:</strong> ${item.ports_scanned}`;
+                        ul.appendChild(li);
+                    });
+                    outputDiv.appendChild(ul);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('output').innerText = 'An error occurred. Please try again.';
+            });
+        });
+    </script>
+</body>
+</html>
+
